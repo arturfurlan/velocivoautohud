@@ -10,7 +10,7 @@ export default function Home() {
   const [isProcessing, setIsProcessing] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
-  const canvasInstance = useRef<fabric.Canvas | null>(null);
+  const canvasInstance = useRef<any>(null);
 
   // Inicializar o canvas quando o componente montar
   useEffect(() => {
