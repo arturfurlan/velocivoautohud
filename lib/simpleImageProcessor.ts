@@ -19,12 +19,21 @@ export function loadImage(src: string | File): Promise<HTMLImageElement> {
       resolve(img);
     };
     
-    img.onerror = () => {
+    img.onerror = (err) => {
+      console.error('Erro ao carregar imagem:', err);
       reject(new Error('Erro ao carregar imagem'));
     };
     
     if (typeof src === 'string') {
-      img.src = src;
+      try {
+        // Adicionar timestamp para evitar cache
+        const url = new URL(src, window.location.origin);
+        url.searchParams.append('t', Date.now().toString());
+        img.src = url.toString();
+      } catch (e) {
+        // Fallback para URLs relativas
+        img.src = `${src}?t=${Date.now()}`;
+      }
     } else {
       const reader = new FileReader();
       reader.onload = (e) => {
@@ -83,13 +92,13 @@ export async function processImage(imageFile: File): Promise<string> {
     console.log('Carregando imagem do usuário...');
     // Carregar a imagem do usuário
     const userImage = await loadImage(imageFile);
-    console.log('Imagem carregada com sucesso');
+    console.log('Imagem carregada com sucesso:', userImage.width, 'x', userImage.height);
 
     // Criar canvas no tamanho do Stories
     const canvas = document.createElement('canvas');
     canvas.width = STORIES_WIDTH;
     canvas.height = STORIES_HEIGHT;
-    const ctx = canvas.getContext('2d');
+    const ctx = canvas.getContext('2d', { alpha: false });
     
     if (!ctx) {
       throw new Error('Não foi possível criar o contexto 2D');
@@ -101,16 +110,36 @@ export async function processImage(imageFile: File): Promise<string> {
     
     // Desenhar a imagem do usuário centralizada e dimensionada
     console.log('Desenhando imagem no canvas...');
+    
+    // Melhorar a qualidade da renderização
+    ctx.imageSmoothingEnabled = true;
+    ctx.imageSmoothingQuality = 'high';
+    
     drawImageProp(ctx, userImage);
     
-    // Carregar e desenhar a HUD
-    console.log('Carregando HUD...');
-    const hudImage = await loadImage('/hud.jpg');
-    ctx.drawImage(hudImage, 0, 0, STORIES_WIDTH, STORIES_HEIGHT);
+    try {
+      // Carregar e desenhar a HUD
+      console.log('Carregando HUD...');
+      const hudImage = await loadImage('/hud.jpg');
+      console.log('HUD carregada com sucesso:', hudImage.width, 'x', hudImage.height);
+      
+      // Modo de composição que mantém mais detalhes da imagem original
+      ctx.globalCompositeOperation = 'source-over';
+      
+      // Primeiro desenhar a HUD com uma opacidade mais baixa
+      ctx.globalAlpha = 0.75; // 75% de opacidade para a HUD
+      ctx.drawImage(hudImage, 0, 0, STORIES_WIDTH, STORIES_HEIGHT);
+      
+      // Resetar os parâmetros
+      ctx.globalAlpha = 1.0;
+      ctx.globalCompositeOperation = 'source-over';
+    } catch (hudError) {
+      console.error('Erro ao carregar HUD, continuando sem aplicá-la:', hudError);
+    }
     
     // Converter para data URL
     console.log('Gerando imagem final...');
-    const dataUrl = canvas.toDataURL('image/png');
+    const dataUrl = canvas.toDataURL('image/png', 0.9);
     
     console.log('Processamento concluído com sucesso!');
     return dataUrl;
