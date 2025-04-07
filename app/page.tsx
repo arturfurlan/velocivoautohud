@@ -66,25 +66,12 @@ export default function Home() {
     }
   };
 
-  // Abrir a ferramenta de conversão HUD para PNG
-  const openHudConverter = () => {
-    window.open('/scripts/convertHud.html', '_blank');
-  };
-
   return (
     <main className="min-h-screen p-6 bg-gray-100">
       <div className="max-w-4xl mx-auto">
         <header className="mb-8 text-center">
           <h1 className="text-3xl font-bold mb-2">Velocivo Auto HUD</h1>
           <p className="text-gray-600">Adicione automaticamente o HUD da Velocivo às suas imagens</p>
-          
-          {/* Botão para acessar ferramenta de conversão */}
-          <button
-            onClick={openHudConverter}
-            className="mt-2 text-sm bg-purple-500 hover:bg-purple-600 text-white px-3 py-1 rounded transition-colors"
-          >
-            Ferramenta de Conversão HUD
-          </button>
         </header>
         
         <div className="mb-8 bg-white p-6 rounded-lg shadow-md">
