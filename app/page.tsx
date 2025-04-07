@@ -1,8 +1,7 @@
 'use client';
 
-import { useState, useCallback } from 'react';
-import * as imageProcessor from '@/lib/imageProcessor';
-import Canvas from './components/Canvas';
+import { useState } from 'react';
+import * as imageProcessor from '@/lib/simpleImageProcessor';
 import '../styles/globals.css';
 
 export default function Home() {
@@ -11,13 +10,6 @@ export default function Home() {
   const [isProcessing, setIsProcessing] = useState(false);
   const [processingStatus, setProcessingStatus] = useState('');
   const [error, setError] = useState<string | null>(null);
-  const [canvas, setCanvas] = useState<any>(null);
-
-  // Manipular quando o canvas estiver pronto
-  const handleCanvasReady = useCallback((canvasInstance: any) => {
-    console.log('Canvas está pronto');
-    setCanvas(canvasInstance);
-  }, []);
 
   // Manipular o upload de arquivos
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -37,11 +29,6 @@ export default function Home() {
 
   // Processar a imagem
   const processImage = async (file: File) => {
-    if (!canvas) {
-      setError('Canvas não está disponível. Tente recarregar a página.');
-      return;
-    }
-
     setIsProcessing(true);
     setError(null);
     setProcessingStatus('Iniciando processamento...');
@@ -50,7 +37,7 @@ export default function Home() {
       console.log('Iniciando processamento da imagem');
       setProcessingStatus('Aplicando HUD à imagem...');
       
-      const result = await imageProcessor.processImage(canvas, file);
+      const result = await imageProcessor.processImage(file);
       console.log('Processamento concluído');
       
       if (!result) {
@@ -151,9 +138,6 @@ export default function Home() {
           </div>
         </div>
       )}
-
-      {/* Canvas escondido usado para processamento */}
-      <Canvas onCanvasReady={handleCanvasReady} />
     </main>
   );
 } 
