@@ -12,14 +12,20 @@ const isBrowser = () => typeof window !== 'undefined';
 /**
  * Cria uma nova instância do canvas da fabric.js
  */
-export function createCanvas(): any {
+export function createCanvas(canvasElement: HTMLCanvasElement | null): any {
   if (!isBrowser()) {
     console.log('Canvas não pode ser criado no servidor');
     return null;
   }
   
+  if (!canvasElement) {
+    console.error('Elemento canvas não encontrado');
+    return null;
+  }
+  
   try {
-    return new fabric.Canvas('canvas', {
+    // Usar o StaticCanvas em vez do Canvas interativo
+    return new fabric.StaticCanvas(canvasElement, {
       width: STORIES_WIDTH,
       height: STORIES_HEIGHT,
       backgroundColor: '#000000',

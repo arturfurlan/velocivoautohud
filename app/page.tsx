@@ -1,7 +1,8 @@
 'use client';
 
-import { useState, useEffect, useRef } from 'react';
+import { useState, useCallback } from 'react';
 import * as imageProcessor from '@/lib/imageProcessor';
+import Canvas from './components/Canvas';
 import '../styles/globals.css';
 
 export default function Home() {
@@ -9,38 +10,12 @@ export default function Home() {
   const [processedImage, setProcessedImage] = useState<string | null>(null);
   const [isProcessing, setIsProcessing] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const canvasRef = useRef<HTMLCanvasElement>(null);
-  const canvasInstance = useRef<any>(null);
-  const [isBrowser, setIsBrowser] = useState(false);
+  const [canvas, setCanvas] = useState<any>(null);
 
-  // Verificar se estamos no navegador
-  useEffect(() => {
-    setIsBrowser(true);
+  // Manipular quando o canvas estiver pronto
+  const handleCanvasReady = useCallback((canvasInstance: any) => {
+    setCanvas(canvasInstance);
   }, []);
-
-  // Inicializar o canvas quando o componente montar
-  useEffect(() => {
-    if (isBrowser && canvasRef.current && !canvasInstance.current) {
-      try {
-        canvasInstance.current = imageProcessor.createCanvas();
-      } catch (err) {
-        console.error('Erro ao criar canvas:', err);
-        setError('Erro ao inicializar o canvas. Por favor, recarregue a página.');
-      }
-    }
-
-    // Cleanup quando o componente desmontar
-    return () => {
-      if (canvasInstance.current) {
-        try {
-          canvasInstance.current.dispose();
-          canvasInstance.current = null;
-        } catch (err) {
-          console.error('Erro ao desmontar canvas:', err);
-        }
-      }
-    };
-  }, [isBrowser]);
 
   // Manipular o upload de arquivos
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -60,7 +35,7 @@ export default function Home() {
 
   // Processar a imagem
   const processImage = async (file: File) => {
-    if (!canvasInstance.current) {
+    if (!canvas) {
       setError('Canvas não está disponível. Tente recarregar a página.');
       return;
     }
@@ -69,7 +44,7 @@ export default function Home() {
     setError(null);
     
     try {
-      const result = await imageProcessor.processImage(canvasInstance.current, file);
+      const result = await imageProcessor.processImage(canvas, file);
       if (!result) {
         throw new Error('Não foi possível gerar a imagem processada');
       }
@@ -160,11 +135,7 @@ export default function Home() {
       )}
 
       {/* Canvas escondido usado para processamento */}
-      <canvas
-        ref={canvasRef}
-        id="canvas"
-        style={{ display: 'none' }}
-      />
+      <Canvas onCanvasReady={handleCanvasReady} />
     </main>
   );
 } 
