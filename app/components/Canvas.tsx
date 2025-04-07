@@ -5,21 +5,25 @@ import * as fabric from 'fabric';
 import { STORIES_WIDTH, STORIES_HEIGHT } from '@/lib/imageProcessor';
 
 interface CanvasProps {
-  onCanvasReady: (canvas: fabric.StaticCanvas) => void;
+  onCanvasReady: (canvas: any) => void;
 }
 
 export default function Canvas({ onCanvasReady }: CanvasProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
-  const canvasInstance = useRef<fabric.StaticCanvas | null>(null);
+  const canvasInstance = useRef<any>(null);
 
   useEffect(() => {
+    // Não fazer nada durante a renderização do servidor
+    if (typeof window === 'undefined') return;
+    
     if (canvasRef.current && !canvasInstance.current) {
       try {
-        // Criar um canvas estático em vez de interativo
-        canvasInstance.current = new fabric.StaticCanvas(canvasRef.current, {
+        // Usar Canvas regular em vez de StaticCanvas para suportar todas as operações necessárias
+        canvasInstance.current = new fabric.Canvas(canvasRef.current, {
           width: STORIES_WIDTH,
           height: STORIES_HEIGHT,
           backgroundColor: '#000000',
+          preserveObjectStacking: true,
         });
 
         // Notificar o componente pai que o canvas está pronto

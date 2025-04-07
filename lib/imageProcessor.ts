@@ -52,14 +52,14 @@ export function loadImage(file: File): Promise<any> {
         const dataUrl = e.target?.result as string;
         
         try {
-          // @ts-ignore - Ignorando erro de tipo, pois a API do fabric não corresponde às definições de tipo
+          // @ts-ignore
           fabric.Image.fromURL(dataUrl, (img: any) => {
             if (!img) {
               reject(new Error('Falha ao carregar a imagem'));
               return;
             }
             resolve(img);
-          }, { crossOrigin: 'anonymous' });
+          });
         } catch (err) {
           console.error('Erro ao processar imagem com fabric:', err);
           reject(new Error('Erro ao processar a imagem'));
@@ -88,14 +88,14 @@ export function loadHUD(): Promise<any> {
 
   return new Promise((resolve, reject) => {
     try {
-      // @ts-ignore - Ignorando erro de tipo, pois a API do fabric não corresponde às definições de tipo
+      // @ts-ignore
       fabric.Image.fromURL('/hud.jpg', (img: any) => {
         if (!img) {
           reject(new Error('Falha ao carregar a HUD'));
           return;
         }
         resolve(img);
-      }, { crossOrigin: 'anonymous' });
+      });
     } catch (err) {
       console.error('Erro ao carregar HUD:', err);
       reject(new Error('Erro ao carregar a HUD'));
@@ -107,26 +107,36 @@ export function loadHUD(): Promise<any> {
  * Ajusta a imagem para caber no tamanho do Stories
  */
 export function fitImageToStories(image: any): void {
-  const imgWidth = image.width || 0;
-  const imgHeight = image.height || 0;
+  if (!image) return;
   
-  // Calcular escalas
-  const scaleX = STORIES_WIDTH / imgWidth;
-  const scaleY = STORIES_HEIGHT / imgHeight;
-  
-  // Usar a maior escala para cobrir todo o canvas
-  const scale = Math.max(scaleX, scaleY);
-  
-  image.scale(scale);
-  
-  // Centralizar a imagem
-  const scaledWidth = imgWidth * scale;
-  const scaledHeight = imgHeight * scale;
-  
-  image.set({
-    left: (STORIES_WIDTH - scaledWidth) / 2,
-    top: (STORIES_HEIGHT - scaledHeight) / 2,
-  });
+  try {
+    const imgWidth = image.width || 0;
+    const imgHeight = image.height || 0;
+    
+    if (imgWidth <= 0 || imgHeight <= 0) return;
+    
+    // Calcular escalas
+    const scaleX = STORIES_WIDTH / imgWidth;
+    const scaleY = STORIES_HEIGHT / imgHeight;
+    
+    // Usar a maior escala para cobrir todo o canvas
+    const scale = Math.max(scaleX, scaleY);
+    
+    image.scale(scale);
+    
+    // Centralizar a imagem
+    const scaledWidth = imgWidth * scale;
+    const scaledHeight = imgHeight * scale;
+    
+    image.set({
+      left: (STORIES_WIDTH - scaledWidth) / 2,
+      top: (STORIES_HEIGHT - scaledHeight) / 2,
+      selectable: false,
+      evented: false,
+    });
+  } catch (err) {
+    console.error('Erro ao ajustar imagem:', err);
+  }
 }
 
 /**
@@ -144,38 +154,52 @@ export async function processImage(canvas: any, imageFile: File): Promise<string
   // Limpar canvas
   try {
     canvas.clear();
+    canvas.renderAll();
   } catch (err) {
     console.error('Erro ao limpar o canvas:', err);
     throw new Error('Erro ao preparar o canvas para processamento');
   }
   
   try {
+    console.log('Carregando imagem do usuário...');
     // Carregar a imagem do usuário
     const userImage = await loadImage(imageFile);
+    console.log('Imagem carregada, ajustando tamanho...');
     
     // Ajustar ao tamanho do Stories
     fitImageToStories(userImage);
     
     // Adicionar a imagem ao canvas
     canvas.add(userImage);
+    canvas.renderAll();
     
+    console.log('Carregando HUD...');
     // Carregar e adicionar a HUD
     const hudImage = await loadHUD();
+    hudImage.set({
+      selectable: false,
+      evented: false,
+    });
     canvas.add(hudImage);
     
     // Renderizar o canvas
+    console.log('Renderizando resultado final...');
     canvas.renderAll();
+    
+    // Esperar um momento para garantir que o canvas terminou de renderizar
+    await new Promise(resolve => setTimeout(resolve, 100));
     
     // Retornar a imagem como dataURL
     const dataUrl = canvas.toDataURL({
       format: 'png',
-      multiplier: 1
+      quality: 1,
     });
     
     if (!dataUrl) {
       throw new Error('Falha ao gerar a imagem final');
     }
     
+    console.log('Processamento concluído com sucesso!');
     return dataUrl;
   } catch (error) {
     console.error('Erro ao processar a imagem:', error);

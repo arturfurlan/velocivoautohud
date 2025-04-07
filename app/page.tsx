@@ -9,11 +9,13 @@ export default function Home() {
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [processedImage, setProcessedImage] = useState<string | null>(null);
   const [isProcessing, setIsProcessing] = useState(false);
+  const [processingStatus, setProcessingStatus] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [canvas, setCanvas] = useState<any>(null);
 
   // Manipular quando o canvas estiver pronto
   const handleCanvasReady = useCallback((canvasInstance: any) => {
+    console.log('Canvas está pronto');
     setCanvas(canvasInstance);
   }, []);
 
@@ -42,12 +44,20 @@ export default function Home() {
 
     setIsProcessing(true);
     setError(null);
+    setProcessingStatus('Iniciando processamento...');
     
     try {
+      console.log('Iniciando processamento da imagem');
+      setProcessingStatus('Aplicando HUD à imagem...');
+      
       const result = await imageProcessor.processImage(canvas, file);
+      console.log('Processamento concluído');
+      
       if (!result) {
         throw new Error('Não foi possível gerar a imagem processada');
       }
+      
+      setProcessingStatus('Finalizando...');
       setProcessedImage(result);
     } catch (err: any) {
       console.error('Erro durante processamento:', err);
@@ -55,6 +65,7 @@ export default function Home() {
       setProcessedImage(null);
     } finally {
       setIsProcessing(false);
+      setProcessingStatus('');
     }
   };
 
@@ -62,12 +73,17 @@ export default function Home() {
   const handleDownload = () => {
     if (!processedImage) return;
 
-    const link = document.createElement('a');
-    link.href = processedImage;
-    link.download = 'story-com-hud.png';
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
+    try {
+      const link = document.createElement('a');
+      link.href = processedImage;
+      link.download = 'story-com-hud.png';
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+    } catch (err) {
+      console.error('Erro ao fazer download:', err);
+      setError('Erro ao fazer download da imagem.');
+    }
   };
 
   return (
@@ -85,12 +101,13 @@ export default function Home() {
             onChange={handleFileChange}
             className="hidden"
             id="file-upload"
+            disabled={isProcessing}
           />
           <label
             htmlFor="file-upload"
-            className="btn bg-blue-600 text-white px-6 py-3 rounded-md cursor-pointer hover:bg-blue-700 transition-colors"
+            className={`btn bg-blue-600 text-white px-6 py-3 rounded-md cursor-pointer hover:bg-blue-700 transition-colors ${isProcessing ? 'opacity-50 cursor-not-allowed' : ''}`}
           >
-            Selecionar Imagem
+            {isProcessing ? 'Processando...' : 'Selecionar Imagem'}
           </label>
           {selectedFile && (
             <div className="mt-2 text-sm text-gray-600">
@@ -108,8 +125,9 @@ export default function Home() {
 
       {isProcessing && (
         <div className="text-center mb-8">
-          <div className="inline-block animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-blue-600"></div>
-          <p className="mt-2">Processando sua imagem...</p>
+          <div className="inline-block animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-blue-600 mb-2"></div>
+          <p className="text-lg font-medium">{processingStatus || 'Processando sua imagem...'}</p>
+          <p className="text-sm text-gray-500 mt-1">Isso pode levar alguns segundos</p>
         </div>
       )}
 
