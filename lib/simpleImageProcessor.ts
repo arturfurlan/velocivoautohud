@@ -104,7 +104,7 @@ export async function processImage(file: File): Promise<Blob> {
       // Desenhar a imagem original
       ctx.drawImage(img, 0, 0);
       
-      // Carregar o HUD (usar o arquivo jpg disponível)
+      // Carregar o HUD (usar PNG com transparência)
       const hudImg = new Image();
       hudImg.onload = () => {
         // Configurar para preservar a transparência
@@ -125,12 +125,28 @@ export async function processImage(file: File): Promise<Blob> {
       };
       
       hudImg.onerror = () => {
-        console.error('Erro ao carregar hud.jpg');
-        reject(new Error('Erro ao carregar HUD'));
+        console.error('Erro ao carregar hud.png, tentando fallback para jpg');
+        // Tentar carregar a versão JPG como fallback
+        const fallbackImg = new Image();
+        fallbackImg.onload = () => {
+          ctx.drawImage(fallbackImg, 0, 0, canvas.width, canvas.height);
+          
+          canvas.toBlob((blob) => {
+            if (blob) {
+              resolve(blob);
+            } else {
+              reject(new Error('Failed to convert canvas to blob'));
+            }
+          });
+        };
+        fallbackImg.onerror = () => {
+          reject(new Error('Erro ao carregar HUD'));
+        };
+        fallbackImg.src = '/hud.jpg';
       };
       
-      // Carregar o HUD JPG
-      hudImg.src = '/hud.jpg';
+      // Carregar o HUD PNG com transparência
+      hudImg.src = '/hud.png';
     };
     
     img.onerror = () => {
