@@ -125,11 +125,11 @@ export async function processImage(file: File): Promise<Blob> {
       };
       
       hudImg.onerror = () => {
-        console.error('Erro ao carregar hud.png, tentando fallback para jpg');
-        // Tentar carregar a versão JPG como fallback
-        const fallbackImg = new Image();
-        fallbackImg.onload = () => {
-          ctx.drawImage(fallbackImg, 0, 0, canvas.width, canvas.height);
+        console.error('Erro ao carregar minfy.png, tentando outros formatos');
+        // Tentar carregar a versão de backup hud.png
+        const backupImg = new Image();
+        backupImg.onload = () => {
+          ctx.drawImage(backupImg, 0, 0, canvas.width, canvas.height);
           
           canvas.toBlob((blob) => {
             if (blob) {
@@ -139,14 +139,31 @@ export async function processImage(file: File): Promise<Blob> {
             }
           });
         };
-        fallbackImg.onerror = () => {
-          reject(new Error('Erro ao carregar HUD'));
+        backupImg.onerror = () => {
+          console.error('Erro ao carregar hud.png, tentando JPG como último recurso');
+          // Como último recurso, tentar JPG
+          const fallbackImg = new Image();
+          fallbackImg.onload = () => {
+            ctx.drawImage(fallbackImg, 0, 0, canvas.width, canvas.height);
+            
+            canvas.toBlob((blob) => {
+              if (blob) {
+                resolve(blob);
+              } else {
+                reject(new Error('Failed to convert canvas to blob'));
+              }
+            });
+          };
+          fallbackImg.onerror = () => {
+            reject(new Error('Erro ao carregar HUD'));
+          };
+          fallbackImg.src = '/hud.jpg';
         };
-        fallbackImg.src = '/hud.jpg';
+        backupImg.src = '/hud.png';
       };
       
-      // Carregar o HUD PNG com transparência
-      hudImg.src = '/hud.png';
+      // Carregar o HUD PNG versão leve com transparência
+      hudImg.src = '/minfy.png';
     };
     
     img.onerror = () => {
