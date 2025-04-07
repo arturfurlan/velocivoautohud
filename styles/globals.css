@@ -1,0 +1,19 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+body {
+  @apply bg-gray-100 min-h-screen;
+}
+
+.container {
+  @apply mx-auto px-4 py-8;
+}
+
+.btn {
+  @apply px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors;
+}
+
+.btn-secondary {
+  @apply px-4 py-2 bg-gray-600 text-white rounded hover:bg-gray-700 transition-colors;
+} 
