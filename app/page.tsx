@@ -11,21 +11,36 @@ export default function Home() {
   const [error, setError] = useState<string | null>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const canvasInstance = useRef<any>(null);
+  const [isBrowser, setIsBrowser] = useState(false);
+
+  // Verificar se estamos no navegador
+  useEffect(() => {
+    setIsBrowser(true);
+  }, []);
 
   // Inicializar o canvas quando o componente montar
   useEffect(() => {
-    if (canvasRef.current && !canvasInstance.current) {
-      canvasInstance.current = imageProcessor.createCanvas();
+    if (isBrowser && canvasRef.current && !canvasInstance.current) {
+      try {
+        canvasInstance.current = imageProcessor.createCanvas();
+      } catch (err) {
+        console.error('Erro ao criar canvas:', err);
+        setError('Erro ao inicializar o canvas. Por favor, recarregue a página.');
+      }
     }
 
     // Cleanup quando o componente desmontar
     return () => {
       if (canvasInstance.current) {
-        canvasInstance.current.dispose();
-        canvasInstance.current = null;
+        try {
+          canvasInstance.current.dispose();
+          canvasInstance.current = null;
+        } catch (err) {
+          console.error('Erro ao desmontar canvas:', err);
+        }
       }
     };
-  }, []);
+  }, [isBrowser]);
 
   // Manipular o upload de arquivos
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -51,12 +66,18 @@ export default function Home() {
     }
 
     setIsProcessing(true);
+    setError(null);
+    
     try {
       const result = await imageProcessor.processImage(canvasInstance.current, file);
+      if (!result) {
+        throw new Error('Não foi possível gerar a imagem processada');
+      }
       setProcessedImage(result);
-    } catch (err) {
-      setError('Erro ao processar a imagem. Por favor, tente novamente.');
-      console.error(err);
+    } catch (err: any) {
+      console.error('Erro durante processamento:', err);
+      setError(`Erro ao processar a imagem: ${err.message || 'Tente novamente ou use outra imagem'}`);
+      setProcessedImage(null);
     } finally {
       setIsProcessing(false);
     }
