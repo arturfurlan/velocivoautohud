@@ -123,11 +123,17 @@ export async function processImage(imageFile: File): Promise<string> {
       const hudImage = await loadImage('/hud.jpg');
       console.log('HUD carregada com sucesso:', hudImage.width, 'x', hudImage.height);
       
-      // Modo de composição que mantém mais detalhes da imagem original
-      ctx.globalCompositeOperation = 'source-over';
+      // Modo de composição "multiply" é melhor para evitar o efeito esbranquiçado
+      // e manterá as partes escuras da HUD enquanto deixará a imagem original visível
+      ctx.globalCompositeOperation = 'multiply';
       
-      // Primeiro desenhar a HUD com uma opacidade mais baixa
-      ctx.globalAlpha = 0.75; // 75% de opacidade para a HUD
+      // Ajustar a opacidade para um valor que não deixe a imagem muito clara
+      ctx.globalAlpha = 0.9; 
+      ctx.drawImage(hudImage, 0, 0, STORIES_WIDTH, STORIES_HEIGHT);
+      
+      // Uma segunda camada com modo "overlay" para intensificar cores e contrastes
+      ctx.globalCompositeOperation = 'overlay';
+      ctx.globalAlpha = 0.3;
       ctx.drawImage(hudImage, 0, 0, STORIES_WIDTH, STORIES_HEIGHT);
       
       // Resetar os parâmetros
