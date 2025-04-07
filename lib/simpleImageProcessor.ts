@@ -83,68 +83,73 @@ function drawImageProp(
 /**
  * Processa uma imagem aplicando a HUD
  */
-export async function processImage(imageFile: File): Promise<string> {
-  if (!isBrowser()) {
-    throw new Error('Não é possível processar imagens no servidor');
-  }
-
-  try {
-    console.log('Carregando imagem do usuário...');
-    // Carregar a imagem do usuário
-    const userImage = await loadImage(imageFile);
-    console.log('Imagem carregada com sucesso:', userImage.width, 'x', userImage.height);
-
-    // Criar canvas no tamanho do Stories
-    const canvas = document.createElement('canvas');
-    canvas.width = STORIES_WIDTH;
-    canvas.height = STORIES_HEIGHT;
-    const ctx = canvas.getContext('2d', { alpha: false });
-    
-    if (!ctx) {
-      throw new Error('Não foi possível criar o contexto 2D');
-    }
-    
-    // Fundo preto 
-    ctx.fillStyle = '#000000';
-    ctx.fillRect(0, 0, STORIES_WIDTH, STORIES_HEIGHT);
-    
-    // Desenhar a imagem do usuário centralizada e dimensionada
-    console.log('Desenhando imagem no canvas...');
-    
-    // Melhorar a qualidade da renderização
-    ctx.imageSmoothingEnabled = true;
-    ctx.imageSmoothingQuality = 'high';
-    
-    drawImageProp(ctx, userImage);
-    
-    try {
-      // Carregar e desenhar a HUD
-      console.log('Carregando HUD...');
-      const hudImage = await loadImage('/hud.jpg');
-      console.log('HUD carregada com sucesso:', hudImage.width, 'x', hudImage.height);
+export async function processImage(file: File): Promise<Blob> {
+  return new Promise((resolve, reject) => {
+    const img = new Image();
+    img.onload = () => {
+      // Criar canvas com suporte a transparência
+      const canvas = document.createElement('canvas');
+      canvas.width = img.width;
+      canvas.height = img.height;
+      const ctx = canvas.getContext('2d', { alpha: true });
       
-      // Modo padrão de composição - simplesmente coloca a HUD por cima
-      ctx.globalCompositeOperation = 'source-over';
+      if (!ctx) {
+        reject(new Error('Failed to get canvas context'));
+        return;
+      }
       
-      // Sem alteração de opacidade
-      ctx.globalAlpha = 1.0; 
-      ctx.drawImage(hudImage, 0, 0, STORIES_WIDTH, STORIES_HEIGHT);
+      // Limpar o canvas (importante para que comece transparente)
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
       
-      // Resetar os parâmetros
-      ctx.globalAlpha = 1.0;
-      ctx.globalCompositeOperation = 'source-over';
-    } catch (hudError) {
-      console.error('Erro ao carregar HUD, continuando sem aplicá-la:', hudError);
-    }
+      // Desenhar a imagem original
+      ctx.drawImage(img, 0, 0);
+      
+      // Carregar o HUD (usar PNG com transparência)
+      const hudImg = new Image();
+      hudImg.onload = () => {
+        // Configurar para preservar a transparência do PNG
+        ctx.globalCompositeOperation = 'source-over';
+        ctx.globalAlpha = 1.0;
+        
+        // Desenhar o HUD sobre a imagem
+        ctx.drawImage(hudImg, 0, 0, canvas.width, canvas.height);
+        
+        // Converter o canvas para Blob e resolver a promessa
+        canvas.toBlob((blob) => {
+          if (blob) {
+            resolve(blob);
+          } else {
+            reject(new Error('Failed to convert canvas to blob'));
+          }
+        });
+      };
+      
+      hudImg.onerror = () => {
+        console.error('Erro ao carregar hud.png, tentando o formato jpg como fallback');
+        // Tentar carregar o JPG como fallback
+        hudImg.src = '/hud.jpg';
+      };
+      
+      // Carregar o HUD PNG (com transparência)
+      hudImg.src = '/hud.png';
+    };
     
-    // Converter para data URL
-    console.log('Gerando imagem final...');
-    const dataUrl = canvas.toDataURL('image/png', 0.9);
+    img.onerror = () => {
+      reject(new Error('Failed to load image'));
+    };
     
-    console.log('Processamento concluído com sucesso!');
-    return dataUrl;
-  } catch (error) {
-    console.error('Erro ao processar a imagem:', error);
-    throw error;
-  }
+    // Carregar a imagem do arquivo
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      if (e.target?.result) {
+        img.src = e.target.result as string;
+      } else {
+        reject(new Error('Failed to read file'));
+      }
+    };
+    reader.onerror = () => {
+      reject(new Error('Failed to read file'));
+    };
+    reader.readAsDataURL(file);
+  });
 } 
