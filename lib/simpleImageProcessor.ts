@@ -80,10 +80,15 @@ function drawImageProp(
   ctx.drawImage(img, dx, dy, scaledWidth, scaledHeight);
 }
 
+export enum HudType {
+  Original = 'minfy',
+  Novo = 'hudnew'
+}
+
 /**
  * Processa uma imagem aplicando a HUD
  */
-export async function processImage(file: File): Promise<Blob> {
+export async function processImage(file: File, hudType: HudType = HudType.Original): Promise<Blob> {
   return new Promise((resolve, reject) => {
     const img = new Image();
     img.onload = () => {
@@ -104,7 +109,7 @@ export async function processImage(file: File): Promise<Blob> {
       // Desenhar a imagem original
       ctx.drawImage(img, 0, 0);
       
-      // Carregar o HUD (usar PNG com transparência)
+      // Carregar o HUD selecionado (com transparência)
       const hudImg = new Image();
       hudImg.onload = () => {
         // Configurar para preservar a transparência
@@ -125,11 +130,13 @@ export async function processImage(file: File): Promise<Blob> {
       };
       
       hudImg.onerror = () => {
-        console.error('Erro ao carregar minfy.png, tentando outros formatos');
-        // Tentar carregar a versão de backup hud.png
-        const backupImg = new Image();
-        backupImg.onload = () => {
-          ctx.drawImage(backupImg, 0, 0, canvas.width, canvas.height);
+        console.error(`Erro ao carregar ${hudType}.png, tentando alternativas`);
+        // Se falhar, tentar carregar o outro HUD como alternativa
+        const alternativeHud = hudType === HudType.Original ? HudType.Novo : HudType.Original;
+        
+        const alternativeImg = new Image();
+        alternativeImg.onload = () => {
+          ctx.drawImage(alternativeImg, 0, 0, canvas.width, canvas.height);
           
           canvas.toBlob((blob) => {
             if (blob) {
@@ -139,12 +146,13 @@ export async function processImage(file: File): Promise<Blob> {
             }
           });
         };
-        backupImg.onerror = () => {
-          console.error('Erro ao carregar hud.png, tentando JPG como último recurso');
-          // Como último recurso, tentar JPG
-          const fallbackImg = new Image();
-          fallbackImg.onload = () => {
-            ctx.drawImage(fallbackImg, 0, 0, canvas.width, canvas.height);
+        
+        alternativeImg.onerror = () => {
+          console.error(`Erro ao carregar alternativa, tentando os backups`);
+          // Como alternativa, tentar o HUD original grande
+          const backupImg = new Image();
+          backupImg.onload = () => {
+            ctx.drawImage(backupImg, 0, 0, canvas.width, canvas.height);
             
             canvas.toBlob((blob) => {
               if (blob) {
@@ -154,16 +162,35 @@ export async function processImage(file: File): Promise<Blob> {
               }
             });
           };
-          fallbackImg.onerror = () => {
-            reject(new Error('Erro ao carregar HUD'));
+          
+          backupImg.onerror = () => {
+            console.error('Tentando JPG como último recurso');
+            // Como último recurso, tentar JPG
+            const fallbackImg = new Image();
+            fallbackImg.onload = () => {
+              ctx.drawImage(fallbackImg, 0, 0, canvas.width, canvas.height);
+              
+              canvas.toBlob((blob) => {
+                if (blob) {
+                  resolve(blob);
+                } else {
+                  reject(new Error('Failed to convert canvas to blob'));
+                }
+              });
+            };
+            fallbackImg.onerror = () => {
+              reject(new Error('Erro ao carregar HUD'));
+            };
+            fallbackImg.src = '/hud.jpg';
           };
-          fallbackImg.src = '/hud.jpg';
+          backupImg.src = '/hud.png';
         };
-        backupImg.src = '/hud.png';
+        
+        alternativeImg.src = `/${alternativeHud}.png`;
       };
       
-      // Carregar o HUD PNG versão leve com transparência
-      hudImg.src = '/minfy.png';
+      // Carregar o HUD PNG com transparência
+      hudImg.src = `/${hudType}.png`;
     };
     
     img.onerror = () => {

@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import * as imageProcessor from '@/lib/simpleImageProcessor';
+import { HudType } from '@/lib/simpleImageProcessor';
 import '../styles/globals.css';
 
 export default function Home() {
@@ -10,6 +11,7 @@ export default function Home() {
   const [isProcessing, setIsProcessing] = useState(false);
   const [processingStatus, setProcessingStatus] = useState('');
   const [error, setError] = useState<string | null>(null);
+  const [selectedHud, setSelectedHud] = useState<HudType>(HudType.Original);
 
   // Manipular o upload de arquivos
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -27,6 +29,14 @@ export default function Home() {
     }
   };
 
+  // Manipular troca de HUD
+  const handleHudChange = (hudType: HudType) => {
+    setSelectedHud(hudType);
+    if (selectedFile) {
+      processImageHandler(selectedFile);
+    }
+  };
+
   // Processar a imagem
   const processImageHandler = async (file: File) => {
     try {
@@ -34,7 +44,7 @@ export default function Home() {
       setError(null);
       setProcessingStatus('Iniciando processamento...');
       
-      const processedImageBlob = await imageProcessor.processImage(file);
+      const processedImageBlob = await imageProcessor.processImage(file, selectedHud);
       const processedImageUrl = URL.createObjectURL(processedImageBlob);
       
       setProcessingStatus('Finalizando...');
@@ -75,6 +85,66 @@ export default function Home() {
         </header>
         
         <div className="mb-8 bg-white p-6 rounded-lg shadow-md">
+          <h2 className="text-xl font-semibold mb-4">Escolha o estilo de HUD</h2>
+          
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+            <div 
+              className={`relative rounded-lg border-2 p-4 cursor-pointer transition-all ${
+                selectedHud === HudType.Original 
+                  ? 'border-blue-500 bg-blue-50' 
+                  : 'border-gray-200 hover:border-blue-300'
+              }`}
+              onClick={() => handleHudChange(HudType.Original)}
+            >
+              <div className="flex items-center justify-center">
+                <img 
+                  src="/minfy.png" 
+                  alt="HUD Original" 
+                  className="h-64 object-contain"
+                />
+              </div>
+              <div className="mt-2 text-center">
+                <h3 className="font-medium">HUD Original</h3>
+                <p className="text-sm text-gray-500">Estilo clássico da Velocivo</p>
+              </div>
+              {selectedHud === HudType.Original && (
+                <div className="absolute top-2 right-2 bg-blue-500 text-white p-1 rounded-full">
+                  <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
+                    <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                  </svg>
+                </div>
+              )}
+            </div>
+            
+            <div 
+              className={`relative rounded-lg border-2 p-4 cursor-pointer transition-all ${
+                selectedHud === HudType.Novo 
+                  ? 'border-blue-500 bg-blue-50' 
+                  : 'border-gray-200 hover:border-blue-300'
+              }`}
+              onClick={() => handleHudChange(HudType.Novo)}
+            >
+              <div className="flex items-center justify-center">
+                <img 
+                  src="/hudnew.png" 
+                  alt="HUD Novo" 
+                  className="h-64 object-contain"
+                />
+              </div>
+              <div className="mt-2 text-center">
+                <h3 className="font-medium">HUD Novo</h3>
+                <p className="text-sm text-gray-500">Design atualizado</p>
+              </div>
+              {selectedHud === HudType.Novo && (
+                <div className="absolute top-2 right-2 bg-blue-500 text-white p-1 rounded-full">
+                  <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
+                    <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                  </svg>
+                </div>
+              )}
+            </div>
+          </div>
+          
           <h2 className="text-xl font-semibold mb-4">Envie sua imagem</h2>
           <p className="mb-4">Carregue uma foto para aplicar o HUD e criar um Stories personalizado.</p>
           
