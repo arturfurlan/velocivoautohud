@@ -31,9 +31,13 @@ export default function Home() {
 
   // Manipular troca de HUD
   const handleHudChange = (hudType: HudType) => {
-    setSelectedHud(hudType);
-    if (selectedFile) {
-      processImageHandler(selectedFile);
+    // Só atualiza se for um HUD diferente do atual
+    if (hudType !== selectedHud) {
+      setSelectedHud(hudType);
+      // Se tiver um arquivo já selecionado, processa automaticamente
+      if (selectedFile) {
+        processImageHandler(selectedFile);
+      }
     }
   };
 
@@ -190,11 +194,16 @@ export default function Home() {
             <h2 className="text-xl font-semibold mb-4">Resultado</h2>
             <div className="flex flex-col items-center">
               <div className="w-full max-w-md mb-4">
-                <img
-                  src={processedImage}
-                  alt="Stories com HUD"
-                  className="w-full h-auto object-contain border rounded-lg"
-                />
+                <div className="relative">
+                  <img
+                    src={processedImage}
+                    alt="Stories com HUD"
+                    className="w-full h-auto object-contain border rounded-lg"
+                  />
+                  <div className="absolute top-2 right-2 bg-blue-500 text-white text-xs px-2 py-1 rounded-md">
+                    {selectedHud === HudType.Original ? 'HUD Original' : 'HUD Novo'}
+                  </div>
+                </div>
               </div>
               <div className="flex flex-wrap gap-3 justify-center">
                 <button
@@ -208,7 +217,7 @@ export default function Home() {
                     onClick={() => processImageHandler(selectedFile)}
                     className="btn bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-md transition-colors"
                   >
-                    Gerar Novamente
+                    Reprocessar Imagem
                   </button>
                 )}
               </div>
