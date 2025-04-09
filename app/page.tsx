@@ -12,6 +12,7 @@ export default function Home() {
   const [processingStatus, setProcessingStatus] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [selectedHud, setSelectedHud] = useState<HudType>(HudType.Original);
+  const [activeHud, setActiveHud] = useState<HudType>(HudType.Original);
 
   // Manipular o upload de arquivos
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -25,7 +26,7 @@ export default function Home() {
       }
       setSelectedFile(file);
       setError(null);
-      processImageHandler(file);
+      processImageHandler(file, selectedHud);
     }
   };
 
@@ -36,23 +37,24 @@ export default function Home() {
       setSelectedHud(hudType);
       // Se tiver um arquivo já selecionado, processa automaticamente
       if (selectedFile) {
-        processImageHandler(selectedFile);
+        processImageHandler(selectedFile, hudType);
       }
     }
   };
 
-  // Processar a imagem
-  const processImageHandler = async (file: File) => {
+  // Processar a imagem com o HUD específico
+  const processImageHandler = async (file: File, hudType = selectedHud) => {
     try {
       setIsProcessing(true);
       setError(null);
       setProcessingStatus('Iniciando processamento...');
       
-      const processedImageBlob = await imageProcessor.processImage(file, selectedHud);
+      const processedImageBlob = await imageProcessor.processImage(file, hudType);
       const processedImageUrl = URL.createObjectURL(processedImageBlob);
       
       setProcessingStatus('Finalizando...');
       setProcessedImage(processedImageUrl);
+      setActiveHud(hudType); // Atualiza o HUD ativo na imagem
     } catch (error) {
       console.error('Erro ao processar imagem:', error);
       setError('Ocorreu um erro ao processar a imagem. Por favor, tente novamente.');
@@ -201,7 +203,7 @@ export default function Home() {
                     className="w-full h-auto object-contain border rounded-lg"
                   />
                   <div className="absolute top-2 right-2 bg-blue-500 text-white text-xs px-2 py-1 rounded-md">
-                    {selectedHud === HudType.Original ? 'HUD Original' : 'HUD Novo'}
+                    {activeHud === HudType.Original ? 'HUD Original' : 'HUD Novo'}
                   </div>
                 </div>
               </div>
@@ -214,7 +216,7 @@ export default function Home() {
                 </button>
                 {selectedFile && (
                   <button
-                    onClick={() => processImageHandler(selectedFile)}
+                    onClick={() => processImageHandler(selectedFile, selectedHud)}
                     className="btn bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-md transition-colors"
                   >
                     Reprocessar Imagem
