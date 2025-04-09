@@ -196,12 +196,22 @@ export default function Home() {
                   className="w-full h-auto object-contain border rounded-lg"
                 />
               </div>
-              <button
-                onClick={handleDownload}
-                className="btn bg-green-600 hover:bg-green-700 text-white px-6 py-3 rounded-md transition-colors"
-              >
-                Baixar Imagem
-              </button>
+              <div className="flex flex-wrap gap-3 justify-center">
+                <button
+                  onClick={handleDownload}
+                  className="btn bg-green-600 hover:bg-green-700 text-white px-6 py-3 rounded-md transition-colors"
+                >
+                  Baixar Imagem
+                </button>
+                {selectedFile && (
+                  <button
+                    onClick={() => processImageHandler(selectedFile)}
+                    className="btn bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-md transition-colors"
+                  >
+                    Gerar Novamente
+                  </button>
+                )}
+              </div>
             </div>
           </div>
         )}
